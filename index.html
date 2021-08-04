@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			width: 100vw;
+			height: 100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		canvas {
+			border: 1px solid #000;
+		}
+	</style>
+</head>
+
+<body>
+
+	<canvas></canvas>
+
+	<script>
+		'use strict'
+
+		function avrg(...nums) {
+			return nums.reduce((sum, item) => sum + item) / nums.length
+		}
+
+		const cnvs = document.querySelector('canvas'),
+			  cnvsW = 500,
+			  cnvsH = 250,
+			  cnvsScl = 2,
+			  ctx = cnvs.getContext('2d'),
+
+			  cnvsHW = sN(cnvsW) / 2,
+			  cnvsHH = sN(cnvsH) / 2
+
+		cnvs.width = sN(cnvsW)
+		cnvs.height = sN(cnvsH)
+
+		cnvs.style.width = cnvsW + 'px'
+		cnvs.style.height = cnvsH + 'px'
+
+		function sN(...nums) {
+			return nums.map(item => item * cnvsScl)
+			// return numsArr * cnvsScl
+		}
+
+		// function toRad(deg) {
+		// 	return deg * Math.PI / 180
+		// }
+
+		// function toDeg(rad) {
+		// 	return rad * 180 / Math.PI
+		// }
+
+		// function lineToAngle(x, y, distance, angle) {
+
+		// 	return [
+		// 		Math.cos(toRad(angle)) * distance + x, 
+		// 		Math.sin(toRad(angle)) * distance + y
+		// 	]
+		// }
+
+		// function vector(x, y, distance, angle, color = '#000', weight = 1) {
+		// 	const oldFillStyle = ctx.fillStyle,
+		// 		  oldStrokeStyle = ctx.strokeStyle,
+		// 		  oldLineWidth = ctx.LineWidth,
+		// 		  lineToCoords = lineToAngle(x, y, distance, angle)
+
+		// 	ctx.strokeStyle = color
+		// 	ctx.lineWidth = sN(weight)
+
+		// 	ctx.beginPath()
+		// 	ctx.moveTo(x, y)
+		// 	ctx.lineTo(...lineToCoords)
+		// 	ctx.stroke()
+
+		// 	ctx.beginPath()
+		// 	ctx.fillStyle = color		
+		// 	ctx.arc(...lineToCoords, sN(weight + 1), 0, Math.PI * 2)
+		// 	ctx.fill()
+
+		// 	ctx.fillStyle = oldFillStyle
+		// 	ctx.strokeStyle = oldStrokeStyle
+		// 	ctx.lineWidth = oldLineWidth
+		// }
+
+		function vector(x, y, endX, endY, color = '#000', weight = 1) {
+			const oldFillStyle = ctx.fillStyle,
+				  oldStrokeStyle = ctx.strokeStyle,
+				  oldLineWidth = ctx.LineWidth
+
+			ctx.strokeStyle = color
+			ctx.lineWidth = sN(weight)
+
+			ctx.beginPath()
+			ctx.moveTo(x, y)
+			ctx.lineTo(x + endX, y + endY)
+			ctx.stroke()
+
+			ctx.beginPath()
+			ctx.fillStyle = color		
+			ctx.arc(x + endX, y + endY, sN(weight + 1), 0, Math.PI * 2)
+			ctx.fill()
+
+			ctx.fillStyle = oldFillStyle
+			ctx.strokeStyle = oldStrokeStyle
+			ctx.lineWidth = oldLineWidth
+		}
+
+		let angle = null,
+			force = null,
+			vectors = [
+				[50, 0],
+				[0, 0],
+				[25, 40]
+			]
+
+		cnvs.onmousemove = (e) => {
+			let [eX, eY] = sN(e.offsetX, e.offsetY)
+
+			vectors[1] = [(eX - cnvsHW) / 5, (eY - cnvsHH) / 5]
+		}
+
+		function rAF() {
+			ctx.clearRect(0, 0, ...sN(cnvsW, cnvsH))
+
+			const allX = vectors.reduce((sum, [x, y]) => sum + x, 0),
+				  allY = vectors.reduce((sum, [x, y]) => sum + y, 0),
+
+			resultVec = [allX, allY]
+
+			for(let [x, y] of vectors) {
+				vector(cnvsHW, cnvsHH, ...sN(x, y))
+			}
+
+			vector(cnvsHW, cnvsHH, ...sN(...resultVec), '#fcba03')
+
+			requestAnimationFrame(rAF)
+		}
+
+		rAF()		
+
+	</script>
+</body>
+
+</html>
