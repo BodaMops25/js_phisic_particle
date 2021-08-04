@@ -100,18 +100,24 @@
 			shape: 'circle',
 			size: 5,
 			mass: 5,
-			forces: [
-				[100, 5]
-			],
-			resultForce: [],
-			resultForceFunc() {
-				this.resultForce = [
-					this.forces.reduce((sum, [x, y]) => sum + x, 0),
-					this.forces.reduce((sum, [x, y]) => sum + y, 0)
-				]
+			force: [500 * 0.3, 300 * 0.3],
+			addForces(forcesArray) {
 
-				this.forces = []
+				this.force[0] += forcesArray.reduce((sum, [x, y]) => sum + x, 0)
+				this.force[1] += forcesArray.reduce((sum, [x, y]) => sum + y, 0)
 			}
+			// forces: [
+			// 	[100, 5]
+			// ],
+			// resultForce: [],
+			// resultForceFunc() {
+			// 	this.resultForce = [
+			// 		this.forces.reduce((sum, [x, y]) => sum + x, 0),
+			// 		this.forces.reduce((sum, [x, y]) => sum + y, 0)
+			// 	]
+
+			// 	this.forces = []
+			// }
 		}
 
 		function vector(x, y, endX, endY, color = '#000', weight = 1) {
@@ -162,21 +168,25 @@
 
 		// rAF()
 
-		const frameRate = 30 // do not put more than 100, work slowly
+		const frameRate = 60 // do not put more than 100, work slowly
 
 		let getUpdate = setInterval(() => {
 			
 			requestAnimationFrame(() => {
 				ctx.clearRect(0, 0, ...sN(cnvsW, cnvsH))
+				ctx.beginPath()
 
 				const p = particle
 
-				if(p.forces.length !== 0) p.resultForceFunc()
+				// BORDERS BOUNCE
+				
+				if(p.x + p.force[0] / frameRate > cnvsW || 
+				   p.x + p.force[0] / frameRate < 0) p.force[0] *= -1
+				if(p.y + p.force[1] / frameRate > cnvsH || 
+				   p.y + p.force[1] / frameRate < 0) p.force[1] *= -1
 
-				p.x += p.resultForce[0] / frameRate
-				p.y += p.resultForce[1] / frameRate
-
-				// if(p.x > sN(cnvsW))
+				p.x += p.force[0] / frameRate
+				p.y += p.force[1] / frameRate
 
 				ctx.arc(...sN(p.x, p.y, p.size), 0, Math.PI * 2)
 				ctx.fill()
