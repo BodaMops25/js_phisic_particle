@@ -86,21 +86,21 @@
 			ctx.lineWidth = oldLineWidth
 		}
 
-		// function toRad(deg) {
-		// 	return deg * Math.PI / 180
-		// }
+		function toRad(deg) {
+			return deg * Math.PI / 180
+		}
 
-		// function toDeg(rad) {
-		// 	return rad * 180 / Math.PI
-		// }
+		function toDeg(rad) {
+			return rad * 180 / Math.PI
+		}
 
-		// function lineToAngle(x, y, distance, angle) {
+		function lineToAngle(x, y, distance, angle) {
 
-		// 	return [
-		// 		Math.cos(toRad(angle)) * distance + x, 
-		// 		Math.sin(toRad(angle)) * distance + y
-		// 	]
-		// }
+			return [
+				Math.cos(toRad(angle)) * distance + x, 
+				Math.sin(toRad(angle)) * distance + y
+			]
+		}
 
 		// function vector(x, y, distance, angle, color = '#000', weight = 1) {
 		// 	const oldFillStyle = ctx.fillStyle,
@@ -128,12 +128,14 @@
 
 		// PARTICLES
 
-		function Particle(x, y, mass = 1) {
+		const pSize = 8
+
+		function Particle(x, y, mass = 1, force = [0, 0]) {
 			this.id = Particle.id
 			this.x = x
 			this.y = y
 			this.mass = mass
-			this.force = [0, 0]
+			this.force = force
 			this.addForces = function(forcesArray) {
 				this.force[0] += forcesArray.reduce((sum, [x, y]) => sum + x, 0)
 				this.force[1] += forcesArray.reduce((sum, [x, y]) => sum + y, 0)
@@ -146,16 +148,25 @@
 					if(particle.id !== this.id) {
 						const m1 = this.mass,
 							  m2 = particle.mass,
-							  r = Math.sqrt((this.x - particle.x)**2 + (this.y - particle.y)**2),
-							  force = Phis_G * ((m1 * m2) / r**2) * 1e16
+							  r = Math.sqrt((this.x - particle.x)**2 + (this.y - particle.y)**2),						  
 
+							  [a1, a2, b1, b2] = [1, 0, particle.x - this.x, particle.y - this.y],
+							  cosA = (a1*b1 + a2 * b2) / (Math.sqrt(a1**2 + a2**2) * Math.sqrt(b1**2 + b2**2))
 
-						// [this.x + 1; this.y] [particle.x - this.x; particle.y - this.y]
-						// const [a1, a2, b1, b2] = [this.x + 1, this.y, particle.x - this.x, particle.y - this.y]
-						// cosA = (a1*b1 + a2 * b2) / (Math.sqrt(a1**2 + a2**2) * Math.sqrt(b1**2 + b2**2))
-						// 
+							  let force = Phis_G * ((m1 * m2) / r**2) * 1e15,
+							  	  angle = toDeg(Math.acos(cosA))
 
-						// this.addForces([[force, 0]])
+							  if(particle.y - this.y < 0) angle = 360 - angle
+
+							let a = lineToAngle(0, 0, force * -1, angle),
+								newR = Math.sqrt((this.x + a[0] - particle.x)**2 + (this.y + a[1] - particle.y)**2)
+
+							if(r <= sN(pSize)) {
+								this.force = lineToAngle(0, 0, force * -1, angle)
+								this.x += lineToAngle(0, 0, 0.1, angle + 180)[0]
+								this.y += lineToAngle(0, 0, 0.1, angle + 180)[1]
+							}
+							this.addForces([lineToAngle(0, 0, force, angle)])
 					}
 				}
 
@@ -174,7 +185,7 @@
 			this.display = function() {
 				ctx.beginPath()
 				ctx.fillStyle = '#000'
-				ctx.arc(...sN(this.x, this.y, 5), 0, Math.PI * 2)
+				ctx.arc(...sN(this.x, this.y, pSize), 0, Math.PI * 2)
 				ctx.fill()
 
 				if(this.displayForcesVector) {
@@ -189,13 +200,14 @@
 		Particle.id = 0
 
 		const particles = [
-			new Particle(cnvsHW - 100, cnvsHH - 50),
-			new Particle(cnvsHW + 100, cnvsHH + 30)
+			new Particle(cnvsHW - 60, cnvsHH - 30),
+			new Particle(cnvsHW + 60, cnvsHH + 30),
+			// new Particle(cnvsHW - 300, cnvsHH + 160)
 		]
 
 		// RENDER
 
-		const frameRate = 1 // do not put more than 100, work slowly
+		const frameRate = 30 // do not put more than 100, work slowly
 
 		for(let particle of particles) {
 			particle.displayForcesVector = true
