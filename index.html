@@ -38,14 +38,7 @@
 	<script>
 		'use strict'
 
-		// function avrg(...nums) {
-		// 	return nums.reduce((sum, item) => sum + item) / nums.length
-		// }
-
-		function mod(num) {
-			if(num < 0) return num * -1
-			return num
-		}
+		const Phis_G = 6.67 * 1e-11
 
 		const cnvs = document.querySelector('canvas'),
 			//   cnvsW = 500,
@@ -66,7 +59,31 @@
 
 		function sN(...nums) {
 			return nums.map(item => item * cnvsScl)
-			// return numsArr * cnvsScl
+		}
+
+		// GRAPHICS FUNCS
+
+		function vector(x, y, endX, endY, color = '#000', weight = 1) {	
+			const oldFillStyle = ctx.fillStyle,
+				  oldStrokeStyle = ctx.strokeStyle,
+				  oldLineWidth = ctx.LineWidth
+
+			ctx.strokeStyle = color
+			ctx.lineWidth = sN(weight)
+
+			ctx.beginPath()
+			ctx.moveTo(...sN(x, y))
+			ctx.lineTo(...sN(x + endX, y + endY))
+			ctx.stroke()
+
+			ctx.beginPath()
+			ctx.fillStyle = color		
+			ctx.arc(...sN(x + endX, y + endY, weight + 1), 0, Math.PI * 2)
+			ctx.fill()
+
+			ctx.fillStyle = oldFillStyle
+			ctx.strokeStyle = oldStrokeStyle
+			ctx.lineWidth = oldLineWidth
 		}
 
 		// function toRad(deg) {
@@ -109,116 +126,94 @@
 		// 	ctx.lineWidth = oldLineWidth
 		// }
 
-		const particle = {
-			x: cnvsHW + 100,
-			y: cnvsHH,
-			shape: 'circle',
-			size: 5,
-			mass: 5,
-			// force: [500 * 0.3, 300 * 0.3],
-			force: [0, 100],
-			addForces(forcesArray) {
+		// PARTICLES
 
+		function Particle(x, y, mass = 1) {
+			this.id = Particle.id
+			this.x = x
+			this.y = y
+			this.mass = mass
+			this.force = [0, 0]
+			this.addForces = function(forcesArray) {
 				this.force[0] += forcesArray.reduce((sum, [x, y]) => sum + x, 0)
 				this.force[1] += forcesArray.reduce((sum, [x, y]) => sum + y, 0)
 			}
-			// forces: [
-			// 	[100, 5]
-			// ],
-			// resultForce: [],
-			// resultForceFunc() {
-			// 	this.resultForce = [
-			// 		this.forces.reduce((sum, [x, y]) => sum + x, 0),
-			// 		this.forces.reduce((sum, [x, y]) => sum + y, 0)
-			// 	]
+			this.move = function() {
 
-			// 	this.forces = []
-			// }
+				// FORCES
+
+				for(let particle of particles) {
+					if(particle.id !== this.id) {
+						const m1 = this.mass,
+							  m2 = particle.mass,
+							  r = Math.sqrt((this.x - particle.x)**2 + (this.y - particle.y)**2),
+							  force = Phis_G * ((m1 * m2) / r**2) * 1e16
+
+
+						// [this.x + 1; this.y] [particle.x - this.x; particle.y - this.y]
+						// const [a1, a2, b1, b2] = [this.x + 1, this.y, particle.x - this.x, particle.y - this.y]
+						// cosA = (a1*b1 + a2 * b2) / (Math.sqrt(a1**2 + a2**2) * Math.sqrt(b1**2 + b2**2))
+						// 
+
+						// this.addForces([[force, 0]])
+					}
+				}
+
+				// BORDERS
+
+				if(this.x + this.force[0] / this.mass / frameRate > cnvsW || 
+				   this.x + this.force[0] / this.mass / frameRate < 0) this.force[0] = this.force[0] * -1
+				if(this.y + this.force[1] / this.mass / frameRate > cnvsH || 
+				   this.y + this.force[1] / this.mass / frameRate < 0) this.force[1] = this.force[1] * -1
+
+				// ADD COORDS
+
+				this.x += this.force[0] / this.mass / frameRate
+				this.y += this.force[1] / this.mass /frameRate
+			}
+			this.display = function() {
+				ctx.beginPath()
+				ctx.fillStyle = '#000'
+				ctx.arc(...sN(this.x, this.y, 5), 0, Math.PI * 2)
+				ctx.fill()
+
+				if(this.displayForcesVector) {
+					vector(this.x, this.y, this.force[0] / 2, this.force[1] / 2, '#f5d142')
+				}
+			}
+			this.displayForcesVector = false
+			
+			Particle.id++
 		}
 
-		function vector(x, y, endX, endY, color = '#000', weight = 1) {
-			const oldFillStyle = ctx.fillStyle,
-				  oldStrokeStyle = ctx.strokeStyle,
-				  oldLineWidth = ctx.LineWidth
+		Particle.id = 0
 
-			ctx.strokeStyle = color
-			ctx.lineWidth = sN(weight)
+		const particles = [
+			new Particle(cnvsHW - 100, cnvsHH - 50),
+			new Particle(cnvsHW + 100, cnvsHH + 30)
+		]
 
-			ctx.beginPath()
-			ctx.moveTo(...sN(x, y))
-			ctx.lineTo(...sN(x + endX, y + endY))
-			ctx.stroke()
+		// RENDER
 
-			ctx.beginPath()
-			ctx.fillStyle = color		
-			ctx.arc(...sN(x + endX, y + endY, weight + 1), 0, Math.PI * 2)
-			ctx.fill()
+		const frameRate = 1 // do not put more than 100, work slowly
 
-			ctx.fillStyle = oldFillStyle
-			ctx.strokeStyle = oldStrokeStyle
-			ctx.lineWidth = oldLineWidth
+		for(let particle of particles) {
+			particle.displayForcesVector = true
 		}
-
-		let mouseXY = [cnvsHW, cnvsHH]
-
-		cnvs.onmousemove = (e) => {
-			mouseXY = [e.offsetX, e.offsetY]
-
-			// vec = [(eX - particle.x), (eY - particle.y)]
-		}
-
-		const frameRate = 60 // do not put more than 100, work slowly
-
-		let gravity = false
 
 		let getUpdate = setInterval(() => {
 			
 			requestAnimationFrame(() => {
 				ctx.clearRect(0, 0, ...sN(cnvsW, cnvsH))
-				// ctx.fillStyle = 'rgba(255, 255, 255, 0.05)'
-				// ctx.fillRect(0, 0, ...sN(cnvsW, cnvsH))
-				// ctx.beginPath()
-
-				const p = particle
-
-				if(gravity) p.force[1] += 10
-
-				// p.force[0] += (mouseXY[0] - p.x) / 100
-
-				let x = mouseXY[0] - p.x,
-					y = mouseXY[1] - p.y
-
-				// if(a < 0) p.force[0] -= Math.sqrt(a * -1)
-				// else p.force[0] += Math.sqrt(a)
-
-				if(x < 0) p.force[0] -= (x * -1)**0.5
-				else p.force[0] += x**0.5
-
-				if(y < 0) p.force[1] -= (y * -1)**0.5
-				else p.force[1] += y**0.5
-
-				// p.force[0] += Math.sqrt(mod(a))
-
-				// p.force[1] += (mouseXY[1] - p.y) / 100
-
-				// BORDERS BOUNCE
 				
-				if(p.x + p.force[0] / frameRate > cnvsW || 
-				   p.x + p.force[0] / frameRate < 0) p.force[0] = p.force[0] * -0.7
-				if(p.y + p.force[1] / frameRate > cnvsH || 
-				   p.y + p.force[1] / frameRate < 0) p.force[1] = p.force[1] * -0.7
-
-				p.x += p.force[0] / frameRate
-				p.y += p.force[1] / frameRate
-
-				ctx.fillStyle = '#000'
-				ctx.arc(...sN(p.x, p.y, p.size), 0, Math.PI * 2)
-				ctx.fill()
-
-				vector(p.x, p.y, p.force[0] / 2, p.force[1] / 2, '#f5d142')
-				vector(p.x, p.y, mouseXY[0] - p.x, mouseXY[1] - p.y, '#000')
+				for(let particle of particles) {
+					particle.move()
+					particle.display()
+				}
 			})
 		}, 1000 / frameRate)
+
+		// clearInterval(getUpdate)
 
 	</script>
 </body>
