@@ -17,6 +17,12 @@
 			align-items: center;
 		}
 
+		button {
+			position: absolute;
+			top: 1%;
+			left: 1%;
+		}
+
 		canvas {
 			border: 1px solid #000;
 		}
@@ -24,6 +30,8 @@
 </head>
 
 <body>
+
+	<button onclick="gravity = !gravity">Gravity</button>
 
 	<canvas></canvas>
 
@@ -35,8 +43,10 @@
 		// }
 
 		const cnvs = document.querySelector('canvas'),
-			  cnvsW = 500,
-			  cnvsH = 250,
+			//   cnvsW = 500,
+			//   cnvsH = 250,
+			  cnvsW = innerWidth * 0.9,
+			  cnvsH = innerHeight * 0.9,
 			  cnvsScl = 2,
 			  ctx = cnvs.getContext('2d')
 
@@ -100,7 +110,8 @@
 			shape: 'circle',
 			size: 5,
 			mass: 5,
-			force: [500 * 0.3, 300 * 0.3],
+			// force: [500 * 0.3, 300 * 0.3],
+			force: [500, 0],
 			addForces(forcesArray) {
 
 				this.force[0] += forcesArray.reduce((sum, [x, y]) => sum + x, 0)
@@ -170,6 +181,8 @@
 
 		const frameRate = 60 // do not put more than 100, work slowly
 
+		let gravity = false
+
 		let getUpdate = setInterval(() => {
 			
 			requestAnimationFrame(() => {
@@ -178,18 +191,22 @@
 
 				const p = particle
 
+				if(gravity) p.force[1] += 10
+
 				// BORDERS BOUNCE
 				
 				if(p.x + p.force[0] / frameRate > cnvsW || 
-				   p.x + p.force[0] / frameRate < 0) p.force[0] *= -1
+				   p.x + p.force[0] / frameRate < 0) p.force[0] = p.force[0] * -0.7
 				if(p.y + p.force[1] / frameRate > cnvsH || 
-				   p.y + p.force[1] / frameRate < 0) p.force[1] *= -1
+				   p.y + p.force[1] / frameRate < 0) p.force[1] = p.force[1] * -0.7
 
 				p.x += p.force[0] / frameRate
 				p.y += p.force[1] / frameRate
 
 				ctx.arc(...sN(p.x, p.y, p.size), 0, Math.PI * 2)
 				ctx.fill()
+
+				vector(p.x, p.y, p.force[0] / 2, p.force[1] / 2, '#f5d142')
 			})
 		}, 1000 / frameRate)
 
