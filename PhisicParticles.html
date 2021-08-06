@@ -99,7 +99,14 @@
 				id: Particle.id,
 				x,
 				y,
-				force
+				force,
+				addForce(force) {
+					// this.force[0] += forcesArray.reduce((sum, [x, y]) => sum + x, 0)
+					// this.force[1] += forcesArray.reduce((sum, [x, y]) => sum + y, 0)
+
+					this.force[0] += force[0]
+					this.force[1] += force[1]
+				}
 			}
 
 			particles.push(particle)
@@ -108,13 +115,13 @@
 
 		Particle.id = 0
 
-		Particle(cHW, cHH * 2 - 20, lineToAngle(0, 0, 100, 45))
+		Particle(cHW * 2 - 80, cHH, lineToAngle(0, 0, 300, 0))
 
 		// RENDER
 
 		ctx.strokeStyle = pColor
 
-		const frameRate = 60
+		const frameRate = 60, phisicSpeed = 1
 
 		const getUpdate = setInterval(() => {
 			
@@ -124,18 +131,59 @@
 
 				for(let p of particles) {
 
-					// MOVE
-
 					// FORCES LIMIT
 
-					if(mod(p.force[0]) > 2500) p.force[0] = 2500
-					if(mod(p.force[1]) > 2500) p.force[1] = 2500
+					function forceLimit() {
+						if(p.force[0] > 2500) p.force[0] = 2500
+						if(p.force[0] < -2500) p.force[0] = -2500
+						if(p.force[1] > 2500) p.force[1] = 2500
+						if(p.force[1] < -2500) p.force[1] = -2500
+					}
 
+					forceLimit()
+
+					// MOVE
+					// let brdr = cnvs.height - pRadius * 24
+
+					// if(brdr - pRadius > +(p.y + p.force[1] / pMass / frameRate).toFixed(2)) p.addForce([0, 10])
+
+					// if(brdr - pRadius <= +(p.y + p.force[1] / pMass / frameRate).toFixed(2)) {
+					// 	if((p.force[1] / pMass / frameRate).toFixed(2) > 0.5) p.force[1] = +(p.force[1] * -0.4)
+					// 	else p.force[1] = 0
+						
+					// 	// p.addForce([0, p.force[1] * -1])
+					// 	// console.log(p.force[1], +(p.force[1] / pMass / frameRate).toFixed(2))
+					// }
+
+					// ctx.moveTo(0, brdr)
+					// ctx.lineTo(cnvs.width, brdr)
+					// ctx.stroke()
+					
 					const stepX = +(p.x + p.force[0] / pMass / frameRate).toFixed(2),
 						  stepY = +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
+					
+					// BORDER BOUNCE
+					
+					if(stepX >= cnvs.width - pRadius) {
+						if(mod(stepX - p.x) > 0.5) {
+							p.force[0] *= -1
+						}
+						else p.force[0] = 0
+					}
 
-					if(0 + pRadius > stepX || stepX > cnvs.width - pRadius) p.force[0] *= -1
-					if(0 + pRadius > stepY || stepY > cnvs.height - pRadius) p.force[1] *= -1
+					else if(0 + pRadius >= stepX) {
+						if(stepX - p.x < 0.5) {
+							p.force[0] *= -1
+						}
+						else p.force[0] = 0
+					}
+
+					if(stepX <= cnvs.width - pRadius && 0 + pRadius <= stepX) {
+						p.addForce([-5, 0])
+						console.log(2)
+					}
+
+					forceLimit()
 
 					p.x = stepX
 					p.y = stepY
@@ -149,7 +197,7 @@
 				}
 			})
 
-		},  1000 / frameRate)
+		},  1000 / frameRate / phisicSpeed)
 	</script>
 </body>
 </html>
