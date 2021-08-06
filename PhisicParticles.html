@@ -44,6 +44,13 @@
 		cnvs.style.height = cH + 'px'
 
 		// FUNCTIONS
+
+		const flr = Math.floor
+
+		function mod(num) {
+			if(num < 0) return num * -1
+			return num
+		}
 		
 		function toRad(deg) {
 			return deg * Math.PI / 180
@@ -55,8 +62,8 @@
 		
 		function lineToAngle(x, y, distance, angle) {			
 			return [
-				Math.cos(toRad(angle)) * distance + x, 
-				Math.sin(toRad(angle)) * distance + y
+				flr(Math.cos(toRad(angle)) * distance + x), 
+				flr(Math.sin(toRad(angle)) * distance + y)
 			]
 		}
 		
@@ -101,7 +108,7 @@
 
 		Particle.id = 0
 
-		Particle(cHW * 2 - 20, cHH, lineToAngle(0, 0, 100, 0))
+		Particle(cHW, cHH * 2 - 20, lineToAngle(0, 0, 100, 45))
 
 		// RENDER
 
@@ -109,7 +116,7 @@
 
 		const frameRate = 60
 
-		const interval = setInterval(() => {
+		const getUpdate = setInterval(() => {
 			
 			requestAnimationFrame(() => {
 				
@@ -119,10 +126,19 @@
 
 					// MOVE
 
-					if(0 + pRadius > p.x + p.force[0] / pMass / frameRate || p.x + p.force[0] / pMass / frameRate > cnvs.width - pRadius) p.force[0] *= -1
+					// FORCES LIMIT
 
-					p.x += p.force[0] / pMass / frameRate
-					p.y + p.force[1] / pMass / frameRate
+					if(mod(p.force[0]) > 2500) p.force[0] = 2500
+					if(mod(p.force[1]) > 2500) p.force[1] = 2500
+
+					const stepX = +(p.x + p.force[0] / pMass / frameRate).toFixed(2),
+						  stepY = +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
+
+					if(0 + pRadius > stepX || stepX > cnvs.width - pRadius) p.force[0] *= -1
+					if(0 + pRadius > stepY || stepY > cnvs.height - pRadius) p.force[1] *= -1
+
+					p.x = stepX
+					p.y = stepY
 
 					// DISPLAY
 
