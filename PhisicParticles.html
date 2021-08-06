@@ -5,8 +5,135 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Phisic particles</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			width: 100vw;
+			height: 100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		canvas {
+			border: 1px solid #000;
+		}
+	</style>
 </head>
 <body>
 	
+	<canvas></canvas>
+
+	<script>
+		'use strict'
+
+		const Phis_G = 6.67 * 1e-11
+
+		const cnvs = document.querySelector('canvas'),
+			  ctx = cnvs.getContext('2d'),
+			  cW = innerWidth * 0.9,
+			  cH = innerHeight * 0.9,
+			  cHW = cW / 2,
+			  cHH = cH / 2
+			  
+		cnvs.width = cW
+		cnvs.height = cH
+
+		cnvs.style.width = cW + 'px'
+		cnvs.style.height = cH + 'px'
+
+		// FUNCTIONS
+		
+		function toRad(deg) {
+			return deg * Math.PI / 180
+		}
+		
+		function toDeg(rad) {
+			return rad * 180 / Math.PI
+		}
+		
+		function lineToAngle(x, y, distance, angle) {			
+			return [
+				Math.cos(toRad(angle)) * distance + x, 
+				Math.sin(toRad(angle)) * distance + y
+			]
+		}
+		
+		function vector(x, y, endX, endY, color = '#000', weight = 1) {	
+			const oldFillStyle = ctx.fillStyle,
+				  oldStrokeStyle = ctx.strokeStyle,
+				  oldLineWidth = ctx.LineWidth
+
+			ctx.strokeStyle = color
+			ctx.lineWidth = weight
+
+			ctx.beginPath()
+			ctx.moveTo(x, y)
+			ctx.lineTo(x + endX, y + endY)
+			ctx.stroke()
+
+			ctx.beginPath()
+			ctx.fillStyle = color		
+			ctx.arc(x + endX, y + endY, weight + 1, 0, Math.PI * 2)
+			ctx.fill()
+
+			ctx.fillStyle = oldFillStyle
+			ctx.strokeStyle = oldStrokeStyle
+			ctx.lineWidth = oldLineWidth
+		}
+
+		// PARTICLES
+
+		const pMass = 1, pRadius = 10, pColor = '#000', particles = []
+
+		function Particle(x = 0, y = 0, force = [0, 0]) {			
+			const particle = {
+				id: Particle.id,
+				x,
+				y,
+				force
+			}
+
+			particles.push(particle)
+			Particle.id++
+		}
+
+		Particle.id = 0
+
+		Particle(cHW * 2 - 20, cHH, lineToAngle(0, 0, 100, 0))
+
+		// RENDER
+
+		ctx.strokeStyle = pColor
+
+		const frameRate = 60
+
+		const interval = setInterval(() => {
+			
+			requestAnimationFrame(() => {
+				
+				ctx.clearRect(0, 0, cW, cH)
+
+				for(let p of particles) {
+
+					// MOVE
+
+					if(0 + pRadius > p.x + p.force[0] / pMass / frameRate || p.x + p.force[0] / pMass / frameRate > cnvs.width - pRadius) p.force[0] *= -1
+
+					p.x += p.force[0] / pMass / frameRate
+					p.y + p.force[1] / pMass / frameRate
+
+					// DISPLAY
+
+					ctx.beginPath()
+					ctx.arc(p.x, p.y, pRadius, 0, Math.PI * 2)
+					ctx.stroke()
+					vector(p.x, p.y, p.force[0] / 5, p.force[1] / 5)
+				}
+			})
+
+		},  1000 / frameRate)
+	</script>
 </body>
 </html>
