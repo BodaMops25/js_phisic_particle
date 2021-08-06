@@ -144,6 +144,8 @@
 
 				// FORCES
 
+				let newR = null
+
 				for(let particle of particles) {
 					if(particle.id !== this.id) {
 						const m1 = this.mass,
@@ -153,20 +155,24 @@
 							  [a1, a2, b1, b2] = [1, 0, particle.x - this.x, particle.y - this.y],
 							  cosA = (a1*b1 + a2 * b2) / (Math.sqrt(a1**2 + a2**2) * Math.sqrt(b1**2 + b2**2))
 
-							  let force = Phis_G * ((m1 * m2) / r**2) * 1e15,
+							  let force = 1e14 * Phis_G * ((m1 * m2) / r**2),
 							  	  angle = toDeg(Math.acos(cosA))
+
+									console.log(force)
 
 							  if(particle.y - this.y < 0) angle = 360 - angle
 
-							let a = lineToAngle(0, 0, force * -1, angle),
+							let a = lineToAngle(0, 0, force * -1, angle)
 								newR = Math.sqrt((this.x + a[0] - particle.x)**2 + (this.y + a[1] - particle.y)**2)
 
-							if(r <= sN(pSize)) {
-								this.force = lineToAngle(0, 0, force * -1, angle)
-								this.x += lineToAngle(0, 0, 0.1, angle + 180)[0]
-								this.y += lineToAngle(0, 0, 0.1, angle + 180)[1]
+
+							if(newR <= sN(pSize * 3)) {
+								// this.force = lineToAngle(0, 0, force * -1, angle)
+								this.addForces([lineToAngle(0, 0, force * -1, angle)])
 							}
-							this.addForces([lineToAngle(0, 0, force, angle)])
+							else {
+								this.addForces([lineToAngle(0, 0, force, angle)])
+							}
 					}
 				}
 
@@ -200,9 +206,8 @@
 		Particle.id = 0
 
 		const particles = [
-			new Particle(cnvsHW - 60, cnvsHH - 30),
-			new Particle(cnvsHW + 60, cnvsHH + 30),
-			// new Particle(cnvsHW - 300, cnvsHH + 160)
+			new Particle(cnvsHW - 30, cnvsHH, 1, [0, 0]),
+			new Particle(cnvsHW + 30, cnvsHH, 1, [0, 0]),
 		]
 
 		// RENDER
