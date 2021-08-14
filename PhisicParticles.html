@@ -217,8 +217,8 @@
 							if(hAngle > 90) hAngle = 180 - hAngle
 							else resForce *= (hAngle / 90)
 
-							if(angle > 90)  console.log(angle.toFixed(2), resForce.toFixed(2), ((180 - angle) / 90).toFixed(2))
-							else console.log(angle.toFixed(2), resForce.toFixed(2), (angle / 90).toFixed(2))
+							// if(angle > 90)  console.log(angle.toFixed(2), resForce.toFixed(2), ((180 - angle) / 90).toFixed(2))
+							// else console.log(angle.toFixed(2), resForce.toFixed(2), (angle / 90).toFixed(2))
 
 							p.addForce(...lineToAngle(resForce * -1, angle))						
 						}
