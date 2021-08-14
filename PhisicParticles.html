@@ -69,10 +69,19 @@
 			]
 		}
 
-		function angleBetweenVectors(a1, a2, b1, b2) {
+		function preAngleBetweenVectors(a1, a2, b1, b2) {
 			let angle = toDeg(Math.acos(((a1 * b1) + (a2 * b2)) / (Pt(a1, a2) * Pt(b1, b2))))
 			if(b2 < 0) angle = 360 - angle
 			return +angle.toFixed(2)
+		}
+		
+		function angleBetweenVectors(a1, a2, b1, b2) {
+			let deltaAngle = preAngleBetweenVectors(1, 0, a1, a2),
+				deltaAngle2 = preAngleBetweenVectors(1, 0, b1, b2),
+				angle = preAngleBetweenVectors(a1, a2, b1, b2)
+
+			if(deltaAngle > deltaAngle2) angle = 360 - angle
+			return angle
 		}
 		
 		function vector(x, y, endX, endY, color = '#000', weight = 1) {
@@ -125,10 +134,11 @@
 
 		Particle.id = 0
 
-		const forceDir = [0, 10], planeVec = [1, 0]
+		const forceDir = [0, 10]
 
 		Particle(cHW + forceDir[0] * -3, cHH + forceDir[1] * -3, lineToAngle(0, 180))
 		Particle(cHW, cHH, lineToAngle(0, 0))
+		Particle(cHW + 30, cHH + 30, lineToAngle(0, 0))
 
 		// RENDER
 
@@ -163,42 +173,10 @@
 
 						p.addForce(...forceDir)
 
-						// let brdr = cnvs.height - pRadius * 24
-
-						// if(brdr - pRadius > +(p.y + p.force[1] / pMass / frameRate).toFixed(2)) p.addForce([0, 10])
-
-						// if(brdr - pRadius <= +(p.y + p.force[1] / pMass / frameRate).toFixed(2)) {
-						// 	if((p.force[1] / pMass / frameRate).toFixed(2) > 0.5) p.force[1] = +(p.force[1] * -0.4)
-						// 	else p.force[1] = 0
-							
-						// 	// p.addForce([0, p.force[1] * -1])
-						// 	// console.log(p.force[1], +(p.force[1] / pMass / frameRate).toFixed(2))
-						// }
-
-						// ctx.moveTo(0, brdr)
-						// ctx.lineTo(cnvs.width, brdr)
-						// ctx.stroke()
-						
 						let stepX = +(p.x + p.force[0] / pMass / frameRate).toFixed(2),
 							stepY = +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
 						
 						// BORDER BOUNCE
-						
-						// if(stepX >= cnvs.width - pRadius) {
-						// 	if(mod(stepX - p.x) > 0.5) {
-						// 		p.force[0] *= -1
-						// 	}
-						// 	else p.force[0] = 0
-						// }
-
-						// else if(0 + pRadius >= stepX) {
-						// 	if(stepX - p.x < 0.5) {
-						// 		p.force[0] *= -1
-						// 	}
-						// 	else p.force[0] = 0
-						// }
-
-						// if(stepX >= cnvs.width - pRadius)  p.force[0] *= -1
 
 						if(stepX >= cnvs.width - pRadius || 0 + pRadius >= stepX) p.force[0] *= -1
 						if(stepY >= cnvs.height - pRadius || 0 + pRadius >= stepY) p.force[1] *= -1
@@ -207,7 +185,8 @@
 						let r = Pt(stepX - p1.x, stepY - p1.y), pD = pRadius * 2	
 
 						if(r <= pD) {
-							let angle = angleBetweenVectors(...planeVec, p1.x - p.x, p1.y - p.y)
+							let angle = angleBetweenVectors(...forceDir, p1.x - p.x, p1.y - p.y)
+							// if(p1.x - p.x > 0) angle = 360 - angle
 
 							let resForce = Pt(p.force[0], p.force[1])
 
@@ -215,16 +194,10 @@
 
 							if(hAngle > 180) hAngle = 360 - hAngle
 							if(hAngle > 90) hAngle = 180 - hAngle
-							else resForce *= (hAngle / 90)
+							else resForce *= -((hAngle - 90) / 90)
 
-							// if(angle > 90)  console.log(angle.toFixed(2), resForce.toFixed(2), ((180 - angle) / 90).toFixed(2))
-							// else console.log(angle.toFixed(2), resForce.toFixed(2), (angle / 90).toFixed(2))
-
-							p.addForce(...lineToAngle(resForce * -1, angle))						
+							p.addForce(...lineToAngle(resForce * -1, angle + angleBetweenVectors(1, 0, ...forceDir)))
 						}
-						// else p.force[1] *= -1
-						// else clearInterval(getUpdate)
-						// if(r < pRadius * 3) debugger 
 
 						forceLimit()
 
@@ -243,7 +216,6 @@
 					ctx.arc(p.x, p.y, pRadius, 0, Math.PI * 2)
 					ctx.stroke()
 					vector(p.x, p.y, p.force[0] / 5, p.force[1] / 5, 'red')
-					vector(p.x, p.y, ...planeVec)
 				}	
 			})
 
