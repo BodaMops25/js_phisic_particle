@@ -150,7 +150,7 @@
 
 		const forceDir = [0, 10]
 
-		Particle(cHW + forceDir[0] * -3, cHH + forceDir[1] * -3, lineToAngle(0, 180))
+		Particle(cHW + forceDir[0] * -3 + 1, cHH + forceDir[1] * -3, lineToAngle(0, 180))
 		Particle(cHW, cHH)
 
 		// RENDER
@@ -207,9 +207,9 @@
 
 							if(hAngle > 180) hAngle = 360 - hAngle
 							if(hAngle > 90) hAngle = 180 - hAngle
-							else resForce *= -((hAngle - 90) / 90)
+							resForce *= -((hAngle - 90) / 90)
 
-							p.addForce(...lineToAngle(resForce * -1, angle + angleBetweenVectors(1, 0, ...forceDir)))
+							p.addForce(...lineToAngle(resForce * -1, angleBetweenVectors(1, 0, p1.x - p.x, p1.y - p.y)))
 						}
 
 						forceLimit()
