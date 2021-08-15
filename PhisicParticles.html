@@ -157,7 +157,7 @@
 
 		ctx.strokeStyle = pColor
 
-		const frameRate = 60, phisicSpeed = 0.5
+		let frameRate = 60, phisicSpeed = 0.5
 
 		const getUpdate = setInterval(() => {
 			
@@ -186,8 +186,18 @@
 
 						p.addForce(...forceDir)
 
-						let stepX = +(p.x + p.force[0] / pMass / frameRate).toFixed(2),
-							stepY = +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
+						function nextPos(direction) {
+
+							switch (direction) {
+								case 'x':
+									return +(p.x + p.force[0] / pMass / frameRate).toFixed(2)
+								case 'y':
+									return +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
+							}
+						}
+
+						const stepX = nextPos('x'),
+							  stepY = nextPos('y')
 						
 						// BORDER BOUNCE
 
@@ -198,27 +208,20 @@
 						let r = Pt(stepX - p1.x, stepY - p1.y), pD = pRadius * 2	
 
 						if(r <= pD) {
-							let angle = angleBetweenVectors(...forceDir, p1.x - p.x, p1.y - p.y)
-							// if(p1.x - p.x > 0) angle = 360 - angle
+							let angle = angleBetweenVectors(...forceDir, p1.x - p.x, p1.y - p.y),
+								resForce = Pt(p.force[0], p.force[1])
 
-							let resForce = Pt(p.force[0], p.force[1])
-
-							let hAngle = angle
-
-							if(hAngle > 180) hAngle = 360 - hAngle
-							if(hAngle > 90) hAngle = 180 - hAngle
-							resForce *= -((hAngle - 90) / 90)
+							if(angle > 180) angle = 360 - angle
+							if(angle > 90) angle = 180 - angle
+							resForce *= -((angle - 90) / 90)
 
 							p.addForce(...lineToAngle(resForce * -1, angleBetweenVectors(1, 0, p1.x - p.x, p1.y - p.y)))
 						}
 
 						forceLimit()
 
-						stepX = +(p.x + p.force[0] / pMass / frameRate).toFixed(2),
-						stepY = +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
-
-						p.x = stepX
-						p.y = stepY
+						p.x = nextPos('x')
+						p.y = nextPos('y')
 
 						vector(p.x, p.y, ...lineToAngle(10, angleBetweenVectors(1, 0, p1.x - p.x, p1.y - p.y)), 'blue')
 					}
