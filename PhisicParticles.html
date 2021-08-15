@@ -151,7 +151,12 @@
 		const forceDir = [0, 10]
 
 		Particle(cHW + forceDir[0] * -3 + 1, cHH + forceDir[1] * -3, lineToAngle(0, 180))
-		Particle(cHW, cHH)
+
+		const obstacles = [
+			[cHW, cHH, pRadius],
+			[cHW + 20, cHH + 20, pRadius],
+			// [cHW + 30, cHH, pRadius],
+		]
 
 		// RENDER
 
@@ -169,7 +174,7 @@
 
 					if(p == particles[0]) {
 
-						const p1 = particles[1]
+						// const p1 = particles[1]
 
 						// FORCES LIMIT
 
@@ -205,25 +210,28 @@
 						if(stepY >= cnvs.height - pRadius || 0 + pRadius >= stepY) p.force[1] *= -1
 						// else p.addForce(0, 10)
 
-						let r = Pt(stepX - p1.x, stepY - p1.y), pD = pRadius * 2	
+						const pD = pRadius * 2
 
-						if(r <= pD) {
-							let angle = angleBetweenVectors(...forceDir, p1.x - p.x, p1.y - p.y),
-								resForce = Pt(p.force[0], p.force[1])
+						for(const obs of obstacles) {
+							const r = Pt(stepX - obs[0], stepY - obs[1])
 
-							if(angle > 180) angle = 360 - angle
-							if(angle > 90) angle = 180 - angle
-							resForce *= -((angle - 90) / 90)
-
-							p.addForce(...lineToAngle(resForce * -1, angleBetweenVectors(1, 0, p1.x - p.x, p1.y - p.y)))
+							if(r <= pD) {
+								let angle = angleBetweenVectors(...forceDir, obs[0] - p.x, obs[1] - p.y),
+									resForce = Pt(p.force[0], p.force[1])
+	
+								if(angle > 180) angle = 360 - angle
+								if(angle > 90) angle = 180 - angle
+								resForce *= -((angle - 90) / 90)
+	
+								p.addForce(...lineToAngle(resForce * -1, angleBetweenVectors(1, 0, obs[0] - p.x, obs[1] - p.y)))
+							}
 						}
+
 
 						forceLimit()
 
 						p.x = nextPos('x')
 						p.y = nextPos('y')
-
-						vector(p.x, p.y, ...lineToAngle(10, angleBetweenVectors(1, 0, p1.x - p.x, p1.y - p.y)), 'blue')
 					}
 
 					// DISPLAY
@@ -233,8 +241,9 @@
 					ctx.stroke()
 					vector(p.x, p.y, p.force[0] / 5, p.force[1] / 5, 'red')
 
-					circum(cHW, cHH, pRadius)
-					circum(cHW + 30, cHH + 30, pRadius)
+					for(const obs of obstacles) {
+						circum(...obs)
+					}
 				}	
 			})
 
