@@ -150,12 +150,14 @@
 
 		const forceDir = [0, 10]
 
-		Particle(cHW + forceDir[0] * -3 + 1, cHH + forceDir[1] * -3, lineToAngle(0, 180))
+		Particle(cHW + forceDir[0] * -3, cHH + forceDir[1] - 200, lineToAngle(0, 180))
 
 		const obstacles = [
-			[cHW, cHH + 200, pRadius * 20],
+			[cHW, cHH + 150, 200],
+			// [cHW, cHH, pRadius],
 			// [cHW + 20, cHH + 20, pRadius],
 			// [cHW + 30, cHH, pRadius],
+			// [cHW + 10, cHH + 20, pRadius],
 		]
 
 		// RENDER
@@ -163,6 +165,7 @@
 		ctx.strokeStyle = pColor
 
 		let frameRate = 60, phisicSpeed = 0.5
+		particles[0].addForce(0, 5000)
 
 		const getUpdate = setInterval(() => {
 			
@@ -211,16 +214,26 @@
 						const pD = pRadius * 2
 
 						for(const obs of obstacles) {
-							const r = Pt(stepX - obs[0], stepY - obs[1])
+							const r = +(Pt(stepX - obs[0], stepY - obs[1])).toFixed(2)
+
+							if(r < obs[2] + pRadius) {
+								let angle = angleBetweenVectors(1, 0, obs[0] - p.x, obs[1] - p.y) + 180,
+									distance = obs[2] + pRadius - r
+
+								p.x += lineToAngle(distance, angle)[0]
+								p.y += lineToAngle(distance, angle)[1]
+							}
 
 							if(r <= obs[2] + pRadius) {
-								let angle = angleBetweenVectors(...forceDir, obs[0] - p.x, obs[1] - p.y),
+								let angle = angleBetweenVectors(...p.force, obs[0] - p.x, obs[1] - p.y),
 									resForce = Pt(p.force[0], p.force[1])
 	
 								if(angle > 180) angle = 360 - angle
 								if(angle > 90) angle = 180 - angle
-								resForce *= -((angle - 90) / 90)
+								const resForceMultiplier = -((angle - 90) / 90)
+								resForce *= resForceMultiplier**0.8
 	
+								// p.addForce(...lineToAngle(resForce * -1, 90))
 								p.addForce(...lineToAngle(resForce * -1, angleBetweenVectors(1, 0, obs[0] - p.x, obs[1] - p.y)))
 							}
 						}
