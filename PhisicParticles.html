@@ -34,8 +34,8 @@
 			  ctx = cnvs.getContext('2d'),
 			  cW = innerWidth * 0.9,
 			  cH = innerHeight * 0.9,
-			  cHW = cW / scale,
-			  cHH = cH / scale
+			  cHW = cW * scale / 2,
+			  cHH = cH * scale / 2
 			  
 		cnvs.width = cW * scale
 		cnvs.height = cH * scale
@@ -123,7 +123,7 @@
 
 		// PARTICLES
 
-		const pMass = 1, pRadius = 10, pColor = '#000', particles = []
+		const pMass = 1e7, pRadius = 10, pColor = '#000', particles = []
 
 		function Particle(x = 0, y = 0, force = [0, 0]) {			
 			const particle = {
@@ -150,15 +150,19 @@
 		// Particle(cHW + 100, cHH)
 		// Particle(cHW + 31, cHH + 30)
 
-		for(let i = 0; i < 50; i++) {
-			Particle(Math.random() * cW * scale - pRadius, Math.random() * cH * scale - pRadius)
+		const rand = Math.random
+
+		for(let i = 0; i < 20; i++) {
+			Particle(rand() * (cW * scale - pRadius - pRadius) + pRadius, 
+					 rand() * (cH * scale - pRadius - pRadius) + pRadius,
+					 lineToAngle(rand() * 1000, rand() * 360))
 		}
 
 		// RENDER
 
 		ctx.strokeStyle = pColor
 
-		let frameRate = 60, phisicSpeed = 5, displayVectors = 0
+		let frameRate = 60, phisicSpeed = 1, displayVectors = 0
 		// particles[0].addForce(0, 60)
 
 		const getUpdate = setInterval(() => {
@@ -187,10 +191,10 @@
 								  r = Pt(p.x - pN.x, p.y - pN.y),
 								  angle = angleBetweenVectors(1, 0, p.x - pN.x, p.y - pN.y)
 
-							const force = 1e13 *Phis_G * ((m1 * m2) / r**2)
+							const force = Phis_G * ((m1 * m2) / r**2)
 							
 
-							p.addForce(...lineToAngle(force * -1, angle))
+							// p.addForce(...lineToAngle(force * -1, angle))
 						}
 					}
 
@@ -200,9 +204,9 @@
 
 						switch (direction) {
 							case 'x':
-								return +(p.x + p.force[0] / pMass / frameRate).toFixed(2)
+								return +(p.x + p.force[0] / frameRate).toFixed(2)
 							case 'y':
-								return +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
+								return +(p.y + p.force[1] / frameRate).toFixed(2)
 						}
 					}
 
@@ -239,6 +243,7 @@
 
 								// p.addForce(...lineToAngle(resForce * -1, 90))
 								p.addForce(...lineToAngle(resForce * -1, angleBetweenVectors(1, 0, pN.x - p.x, pN.y - p.y)))
+								pN.addForce(...lineToAngle(resForce, angleBetweenVectors(1, 0, pN.x - p.x, pN.y - p.y)))
 							}
 						}
 					}
