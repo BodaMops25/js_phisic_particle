@@ -28,17 +28,17 @@
 	<script>
 		'use strict'
 
-		const Phis_G = 6.67 * 1e-11
+		const Phis_G = 6.67 * 1e-11, scale = 1
 
 		const cnvs = document.querySelector('canvas'),
 			  ctx = cnvs.getContext('2d'),
 			  cW = innerWidth * 0.9,
 			  cH = innerHeight * 0.9,
-			  cHW = cW / 2,
-			  cHH = cH / 2
+			  cHW = cW / scale,
+			  cHH = cH / scale
 			  
-		cnvs.width = cW
-		cnvs.height = cH
+		cnvs.width = cW * scale
+		cnvs.height = cH * scale
 
 		cnvs.style.width = cW + 'px'
 		cnvs.style.height = cH + 'px'
@@ -137,8 +137,6 @@
 
 					this.force[0] += forceX
 					this.force[1] += forceY
-
-					vector(this.x + this.force[0] / pMass / frameRate, this.y + this.force[1] / pMass / frameRate, forceX, forceY)
 				}
 			}
 
@@ -148,112 +146,117 @@
 
 		Particle.id = 0
 
-		const forceDir = [0, 10]
+		// Particle(cHW - 100, cHH)
+		// Particle(cHW + 100, cHH)
+		// Particle(cHW + 31, cHH + 30)
 
-		Particle(cHW + forceDir[0] * -3, cHH + forceDir[1] - 200, lineToAngle(0, 180))
-
-		const obstacles = [
-			[cHW, cHH + 150, 200],
-			// [cHW, cHH, pRadius],
-			// [cHW + 20, cHH + 20, pRadius],
-			// [cHW + 30, cHH, pRadius],
-			// [cHW + 10, cHH + 20, pRadius],
-		]
+		for(let i = 0; i < 50; i++) {
+			Particle(Math.random() * cW * scale - pRadius, Math.random() * cH * scale - pRadius)
+		}
 
 		// RENDER
 
 		ctx.strokeStyle = pColor
 
-		let frameRate = 60, phisicSpeed = 0.5
-		particles[0].addForce(0, 5000)
+		let frameRate = 60, phisicSpeed = 5, displayVectors = 0
+		// particles[0].addForce(0, 60)
 
 		const getUpdate = setInterval(() => {
 			
 			requestAnimationFrame(() => {
 				
-				ctx.clearRect(0, 0, cW, cH)
-
 				for(let p of particles) {
 
-					if(p == particles[0]) {
+					// FORCES LIMIT
 
-						// FORCES LIMIT
+					function forceLimit() {
+						if(p.force[0] > 2500) p.force[0] = 2500
+						if(p.force[0] < -2500) p.force[0] = -2500
+						if(p.force[1] > 2500) p.force[1] = 2500
+						if(p.force[1] < -2500) p.force[1] = -2500
+					}
 
-						function forceLimit() {
-							if(p.force[0] > 2500) p.force[0] = 2500
-							if(p.force[0] < -2500) p.force[0] = -2500
-							if(p.force[1] > 2500) p.force[1] = 2500
-							if(p.force[1] < -2500) p.force[1] = -2500
+					forceLimit()
+
+					// MOVE
+
+					for(const pN of particles) {
+						if(pN !== p) {
+							const m1 = pMass,
+								  m2 = pMass,
+								  r = Pt(p.x - pN.x, p.y - pN.y),
+								  angle = angleBetweenVectors(1, 0, p.x - pN.x, p.y - pN.y)
+
+							const force = 1e13 *Phis_G * ((m1 * m2) / r**2)
+							
+
+							p.addForce(...lineToAngle(force * -1, angle))
 						}
+					}
 
-						forceLimit()
+					// p.addForce(0, 10)
 
-						// MOVE
+					function nextPos(direction) {
 
-						p.addForce(...forceDir)
-
-						function nextPos(direction) {
-
-							switch (direction) {
-								case 'x':
-									return +(p.x + p.force[0] / pMass / frameRate).toFixed(2)
-								case 'y':
-									return +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
-							}
+						switch (direction) {
+							case 'x':
+								return +(p.x + p.force[0] / pMass / frameRate).toFixed(2)
+							case 'y':
+								return +(p.y + p.force[1] / pMass / frameRate).toFixed(2)
 						}
+					}
 
-						const stepX = nextPos('x'),
-							  stepY = nextPos('y')
-						
-						// BORDER BOUNCE
+					const stepX = nextPos('x'),
+						  stepY = nextPos('y')
+					
+					// BORDER BOUNCE
 
-						if(stepX >= cnvs.width - pRadius || 0 + pRadius >= stepX) p.force[0] *= -1
-						if(stepY >= cnvs.height - pRadius || 0 + pRadius >= stepY) p.force[1] *= -1
-						// else p.addForce(0, 10)
+					if(stepX >= cnvs.width - pRadius || 0 + pRadius >= stepX) p.force[0] *= -1
+					if(stepY >= cnvs.height - pRadius || 0 + pRadius >= stepY) p.force[1] *= -1
 
-						const pD = pRadius * 2
+					const pD = pRadius * 2
 
-						for(const obs of obstacles) {
-							const r = +(Pt(stepX - obs[0], stepY - obs[1])).toFixed(2)
+					for(const pN of particles) {
+						if(pN !== p) {
+							const r = +(Pt(stepX - pN.x, stepY - pN.y)).toFixed(2)
 
-							if(r < obs[2] + pRadius) {
-								let angle = angleBetweenVectors(1, 0, obs[0] - p.x, obs[1] - p.y) + 180,
-									distance = obs[2] + pRadius - r
+							if(r < pD) {
+								let angle = angleBetweenVectors(1, 0, pN.x - p.x, pN.y - p.y) + 180,
+									distance = pD - r
 
 								p.x += lineToAngle(distance, angle)[0]
 								p.y += lineToAngle(distance, angle)[1]
 							}
 
-							if(r <= obs[2] + pRadius) {
-								let angle = angleBetweenVectors(...p.force, obs[0] - p.x, obs[1] - p.y),
+							if(r <= pD) {
+								let angle = angleBetweenVectors(...p.force, pN.x - p.x, pN.y - p.y),
 									resForce = Pt(p.force[0], p.force[1])
-	
+
 								if(angle > 180) angle = 360 - angle
 								if(angle > 90) angle = 180 - angle
 								const resForceMultiplier = -((angle - 90) / 90)
 								resForce *= resForceMultiplier**0.8
-	
+
 								// p.addForce(...lineToAngle(resForce * -1, 90))
-								p.addForce(...lineToAngle(resForce * -1, angleBetweenVectors(1, 0, obs[0] - p.x, obs[1] - p.y)))
+								p.addForce(...lineToAngle(resForce * -1, angleBetweenVectors(1, 0, pN.x - p.x, pN.y - p.y)))
 							}
 						}
-
-
-						forceLimit()
-
-						p.x = nextPos('x')
-						p.y = nextPos('y')
 					}
+
+					forceLimit()
+
+					p.x = nextPos('x')
+					p.y = nextPos('y')
 
 					// DISPLAY
 
-					ctx.beginPath()
-					ctx.arc(p.x, p.y, pRadius, 0, Math.PI * 2)
-					ctx.stroke()
-					vector(p.x, p.y, p.force[0] / 5, p.force[1] / 5, 'red')
+					ctx.clearRect(0, 0, cW * scale, cH * scale)
 
-					for(const obs of obstacles) {
-						circum(...obs)
+					for(const p of particles) {
+						ctx.beginPath()
+						ctx.arc(p.x, p.y, pRadius, 0, Math.PI * 2)
+						ctx.stroke()
+						displayVectors ? vector(p.x, p.y, p.force[0] / 5, p.force[1] / 5, 'red') : {}
 					}
 				}	
 			})
