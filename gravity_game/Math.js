@@ -13,21 +13,21 @@ class MathTools {
   }
 
   static randomBetweenInt(min, max) {
-    [min, max] = this.validateNum(min, max)
+    [min, max] = MathTools.validateNum(min, max)
     return Math.round(min + Math.random() * (max - min))
   }
 
   static radToDeg(rad) {
-    rad = this.validateNum(rad)
+    rad = MathTools.validateNum(rad)
     return 180 / Math.PI * rad
   }
   static degToRad(deg) {
-    deg = this.validateNum(deg)
+    deg = MathTools.validateNum(deg)
     return Math.PI / 180 * deg
   }
 }
 
-class Vector2 {
+class Vector {
   constructor(x = 0, y = 0) {
     this._x = MathTools.validateNum(x)
     this._y = MathTools.validateNum(y)
@@ -38,28 +38,68 @@ class Vector2 {
   set y(num) {this._y = MathTools.validateNum(num)}
   get y() {return this._y}
 
-  add(vector2) {
-    if(vector2.constructor !== Vector2) {console.log('Parameter must be Vector2'); return}
-    return new Vector2(this.x + vector2.x, this.y + vector2.y)
+  add(vector) {
+    if(Vector.validateVectorLike(vector) === false) return
+    return new this.constructor(this.x + vector.x, this.y + vector.y)
   }
 
-  substract(vector2) {
-    if(vector2.constructor !== Vector2) {console.log('Parameter must be Vector2'); return}
-    return new Vector2(this.x - vector2.x, this.y - vector2.y)
+  addAbs(num) {
+    num = MathTools.validateNum(num)
+    return new this.constructor(this.x + num, this.y + num)
   }
 
-  multiply(vector2) {
-    if(vector2.constructor !== Vector2) {console.log('Parameter must be Vector2'); return}
-    return new Vector2(this.x * vector2.x, this.y * vector2.y)
+  substract(vector) {
+    if(Vector.validateVectorLike(vector) === false) return
+    return new this.constructor(this.x - vector.x, this.y - vector.y)
   }
 
-  divide(vector2) {
-    if(vector2.constructor !== Vector2) {console.log('Parameter must be Vector2'); return}
-    return new Vector2(this.x / vector2.x, this.y / vector2.y)
+  substractAbs(num) {
+    num = MathTools.validateNum(num)
+    return new this.constructor(this.x - num, this.y - num)
+  }
+
+  multiply(vector) {
+    if(Vector.validateVectorLike(vector) === false) return
+    return new this.constructor(this.x * vector.x, this.y * vector.y)
+  }
+
+  multiplyAbs(num) {
+    num = MathTools.validateNum(num)
+    return new this.constructor(this.x * num, this.y * num)
+  }
+
+  divide(vector) {
+    if(Vector.validateVectorLike(vector) === false) return
+    return new this.constructor(this.x / vector.x, this.y / vector.y)
+  }
+
+  divideAbs(num) {
+    num = MathTools.validateNum(num)
+    return new this.constructor(this.x / num, this.y / num)
+  }
+
+  from(obj) {
+    if(obj.x === undefined) {console.warn('Can\'t find param.x'); return}
+    else if(obj.y === undefined) {console.warn('Can\'t find param.y'); return}
+
+    [obj.x, obj.y] = MathTools.validateNum(obj.x, obj.y)
+
+    this.x = obj.x
+    this.y = obj.y
+
+    return this
+  }
+
+  static validateVectorLike(obj) {
+    if(
+      obj.x === undefined || Number.isNaN(+obj.x) || 
+      obj.y === undefined || Number.isNaN(+obj.y)
+    ) {console.error('Object not like class Vector'); return false}
+    return true
   }
 }
 
-class CartesianVector2 extends Vector2 {
+class CartesianVector extends Vector {
   constructor(x = 0, y = 0) {
     super(...MathTools.validateNum(x, y))
   }
@@ -76,16 +116,20 @@ class CartesianVector2 extends Vector2 {
         angle = this.y > 0 ? angle : 360 - angle
       }
 
-    return new PolarVector2(module, angle)
+    return new PolarVector(module, angle)
   }  
 }
 
-class PolarVector2 extends Vector2 {
+/**
+ * @param {int} x means radius in polar coordinates
+ * @param {number} y means angle in polar coordinates 
+ */
+class PolarVector extends Vector {
   constructor(x = 0, y = 0) {
     super(...MathTools.validateNum(x, y))
   }
 
   toCartesianCoords() {
-    return new CartesianVector2(Math.cos(degToRad(this.y)) * this.x, Math.sin(degToRad(this.y)) * this.x)
+    return new CartesianVector(Math.cos(MathTools.degToRad(this.y)) * this.x, Math.sin(MathTools.degToRad(this.y)) * this.x)
   }
 }

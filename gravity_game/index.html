@@ -13,9 +13,87 @@
   <script src="Math.js"></script>
   <script src="Game.js"></script>
   <script>
+    // CANVAS
+
+    const cnvs = document.querySelector('canvas'),
+			ctx = cnvs.getContext('2d')
+      
+    cnvs.width = parseInt(getComputedStyle(cnvs).width)
+    cnvs.height = parseInt(getComputedStyle(cnvs).height)
+
+    function drawVector(offsetX, offsetY, cartesianVector, size = 2, color = 'white') {
+      [offsetX, offsetY, size] = MathTools.validateNum(offsetX, offsetY, size)
+      if(cartesianVector.constructor !== CartesianVector) {console.error('Parameter must be class CartesianVector'); return}
+
+      ctx.beginPath()
+      ctx.moveTo(offsetX, offsetY)
+      ctx.lineTo(offsetX + cartesianVector.x, offsetY + cartesianVector.y)
+      
+      ctx.lineWidth = size
+      ctx.strokeStyle = color
+      ctx.stroke()
+      
+      ctx.beginPath()
+      ctx.arc(offsetX + cartesianVector.x, offsetY + cartesianVector.y, size * 2, 0, Math.PI * 2)
+      ctx.fillStyle = color
+      ctx.fill()
+    }
+
+    function drawBody(b, debug = false) {
+      ctx.beginPath()
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2)
+      ctx.fillStyle = 'white'
+      ctx.fill()
+      
+      if(debug) {
+        let newVec = new CartesianVector().from(b.acceleration.toCartesianCoords().multiplyAbs(10))
+
+        drawVector(b.x, b.y, newVec, undefined, 'orange')
+        game._bodies.forEach(b2 => {
+          if(b2 !== b) {
+            newVec = new CartesianVector().from(game.gravityPolarVector(b, b2).toCartesianCoords().multiplyAbs(10))
+            drawVector(b.x, b.y, newVec, undefined, 'green')
+          }
+        })
+      }
+    }
+
     // TEST
 
     const game = new GravityGame()
+
+    const ba = game.addBody(new Body({
+      x: cnvs.width / 2 - 100,
+      y: cnvs.height / 2 - 50,
+      radius: 20,
+      mass: 1e12,
+      force: 0,
+      angle: 0,
+      id: 'A'
+    }))
+
+    const bb = game.addBody(new Body({
+      x: cnvs.width / 2 + 100,
+      y: cnvs.height / 2 + 50,
+      radius: 20,
+      mass: 1,
+      force: 0,
+      angle: 0,
+      id: 'B'
+    }))
+
+    /* for(let i = 0; i < 2; i++) {
+      body.push(new Body({
+        x: randomBetweenInt(0, cnvs.width),
+        y: randomBetweenInt(0, cnvs.height),
+        mass: randomBetweenInt(1e12, 1e12),
+        radius: 20,
+      }))
+    } */
+
+    ba.addAcceleration(new PolarVector(5, 90))
+
+    game._bodies.forEach(b => drawBody(b, true))
 
   </script>
 </body>
