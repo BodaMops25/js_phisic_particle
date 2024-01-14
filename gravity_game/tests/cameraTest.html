@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera test</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <canvas></canvas>
+
+  <script src="../Math.js"></script>
+  <script src="../Game.js"></script>
+  <script>
+    // CANVAS
+
+    const cnvs = document.querySelector('canvas')
+      
+    cnvs.width = parseInt(getComputedStyle(cnvs).width)
+    cnvs.height = parseInt(getComputedStyle(cnvs).height)
+
+    // TEST
+
+    const game = new GravityGameRenderEngine({
+      canvas: cnvs,
+      fps: 25,
+      x: 0,
+      y: 0,
+      scale: +sessionStorage.gameScale,
+      debug: true,
+      debugVectors: true,
+      pointsLimit: 2e3,
+      mapViewBodyRadius: 1
+    })
+
+    const ba = game.addBody(new Body({
+      x: 0,
+      y: 0,
+      radius: 1e6,
+      mass: 1e20,
+      force: 0,
+      angle: 0,
+      id: 'A'
+    }))
+    game.addBody(new Body({
+      x: 5e7,
+      y: 0,
+      radius: 1000,
+      mass: 1e15,
+      force: 2.5e20,
+      angle: 90
+    }))
+
+    game.addBody(new Body({
+      x: 5e7 + 20000,
+      y: 0,
+      radius: 100,
+      mass: 1,
+      force: 2.508e5,
+      angle: 90,
+      debug: true,
+      debugVectors: true
+    }))
+
+    game.addBody(new Body({
+      x: -5e7,
+      y: 0,
+      radius: 5e5,
+      mass: 1e15,
+      force: 2.5e20,
+      angle: 270,
+      debug: true
+    }))
+
+    // game.focusBody = game.bodies[2]
+    game.drawFrame()
+    game.play()
+
+    // setTimeout(() => game.stop(), 1000)
+
+
+  </script>
+</body>
+</html>

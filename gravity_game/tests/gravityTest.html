@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gravity test</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <canvas></canvas>
+
+  <script src="../Math.js"></script>
+  <script src="../Game.js"></script>
+  <script>
+    // CANVAS
+
+    const cnvs = document.querySelector('canvas')
+      
+    cnvs.width = parseInt(getComputedStyle(cnvs).width)
+    cnvs.height = parseInt(getComputedStyle(cnvs).height)
+
+    // TEST
+
+    const game = new GravityGameRenderEngine({
+      canvas: cnvs,
+      fps: 60,
+      x: 0,
+      y: 0,
+      scale: +sessionStorage.gameScale,
+      debug: true,
+      debugVectors: true,
+      pointsLimit: 2e3,
+      mapViewBodyRadius: 1
+    })
+
+    const ba = game.addBody(new Body({
+      x: 0,
+      y: 0,
+      radius: 100,
+      mass: 1e15,
+      force: 0,
+      angle: 0,
+      id: 'A'
+    }))
+    const bb = game.addBody(new Body({
+      x: 2000,
+      y: 0,
+      radius: 25,
+      mass: 1,
+      force: 7.5,
+      angle: 90,
+      id: 'B',
+      debug: true,
+      debugVectors: true
+    }))
+
+    game.addBody(new Body({
+      x: 1000,
+      y: 0,
+      radius: 25,
+      mass: 1,
+      force: 25,
+      angle: 90,
+      debug: true,
+      debugVectors: true
+    }))
+
+    game.addBody(new Body({
+      x: 500,
+      y: 0,
+      radius: 25,
+      mass: 1,
+      force: 35,
+      angle: 90,
+      debug: true,
+      debugVectors: true
+    }))
+
+    game.addBody(new Body({
+      x: -3000,
+      y: 0,
+      radius: 25,
+      mass: 1,
+      force: 50,
+      angle: -10,
+      debug: true,
+      debugVectors: true
+    }))
+
+    game.addBody(new Body({
+      x: -3100,
+      y: 0,
+      radius: 25,
+      mass: 1,
+      force: 25,
+      angle: -10,
+      debug: true,
+      debugVectors: true
+    }))
+
+    game.focusBody = ba
+    game.drawFrame()
+    game.play()
+
+    setTimeout(() => game.stop(), 6 * 1000)
+
+  </script>
+</body>
+</html>

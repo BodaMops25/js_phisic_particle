@@ -25,12 +25,12 @@
     const game = new GravityGameRenderEngine({
       canvas: cnvs,
       fps: 25,
-      x: 0,
-      y: 0,
+      x: cnvs.width / 2,
+      y: cnvs.height / 2,
       scale: .01,
       debug: true,
       debugVectors: true,
-      pointsLimit: 0
+      pointsLimit: 2e3
     })
 
     const ba = game.addBody(new Body({

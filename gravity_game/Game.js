@@ -1,6 +1,9 @@
 
 class Body {
-  constructor({x = 0, y = 0, mass = 1, radius = 1, force = 0, angle = 0, id = '', debug} = {}) {
+  constructor({
+    x = 0, y = 0, mass = 1, radius = 1, force = 0, angle = 0, id = '',
+    debug, debugVectors
+  } = {}) {
     [x, y, mass, radius, force, angle] = MathTools.validateNum(x, y, mass, radius, force, angle)
 
     this._x = x
@@ -10,7 +13,12 @@ class Body {
     this._acceleration = new PolarVector(force, angle)
 
     if(id !== '' && typeof id === 'string') this._id = id
-    if(debug) this._debug = true
+    if(debug) {
+      this._debug = {}
+      this._debug._orbit = []
+
+      if(debugVectors) this._debug._debugVectors = true
+    }
   }
 
   set x(num) {this._x = MathTools.validateNum(num)}
@@ -54,7 +62,7 @@ class Body {
 }
 
 class GravityGame {
-  constructor(gravityConst) {
+  constructor({gravityConst, speed} = {}) {
     if(gravityConst !== undefined) this.gravityConst = gravityConst
   }
   _bodies = []
@@ -116,7 +124,7 @@ class GravityGame {
 
   gravityLaw(b1, b2) {
     if(b1.constructor !== Body || b2.constructor !== Body) {console.error('Parameters must be class Body'); return false}
-    return (b1.mass * b2.mass) / GravityGame.bodiesDistance(b1, b2) * this.gravityConst
+    return this.gravityConst * (b1.mass * b2.mass) / GravityGame.bodiesDistance(b1, b2)**2
   }
 
   gravityPolarVector(b1, b2) {
@@ -220,8 +228,9 @@ class GravityGame {
 
 class GravityGameRenderEngine extends GravityGame {
   constructor({
-    gravityConst, canvas, fps = 60, debug, pointsLimit, debugVectors,
-    x, y, scale
+    gravityConst, canvas, fps = 60,
+    debug, pointsLimit, debugVectors,
+    x, y, scale, mapViewBodyRadius
   } = {}) {
     super(gravityConst)
   
@@ -231,22 +240,30 @@ class GravityGameRenderEngine extends GravityGame {
 
     this.fps = fps
 
-    this.x = x !== undefined ? x : this.#cnvs.width / 2
-    this.y = y !== undefined ? y : this.#cnvs.height / 2
+    x !== undefined ? this.offsetX = x : ''
+    y !== undefined ? this.offsetY = y : ''
     scale !== undefined ? this.scale = scale : ''
 
+    mapViewBodyRadius !== undefined ? this.mapViewBodyRadius = MathTools.validateNum(mapViewBodyRadius) : ''
+
     if(debug) {
-      this.debug = true
-      this._points = []
-      this._pointsLimit = MathTools.validateNum(pointsLimit)
-      this._debugVectors = MathTools.validateNum(debugVectors)
+      this._debug = {}
+
+      if(debugVectors) this._debug._debugVectors = true
+
+      this._debug._pointsLimit = MathTools.validateNum(pointsLimit)
     }
+
+    this.setHotkeys()
   }
 
   _x = 0
   _y = 0
+  _offsetX = 0
+  _offsetY = 0
   _scale = 1
   _focusBody = null
+  _mapViewBodyRadius = 0
 
   #cnvs = null
   #ctx = null
@@ -260,32 +277,67 @@ class GravityGameRenderEngine extends GravityGame {
   }
   get fps() {return this._fps}
 
-  set x(num) {this._x = MathTools.validateNum(num) + this.#cnvs.width / 2}
-  get x() {return this._x}
+  set mapViewBodyRadius(num) {this._mapViewBodyRadius = MathTools.validateNum(num)}
+  get mapViewBodyRadius() {return this._mapViewBodyRadius}
 
-  set y(num) {this._y = MathTools.validateNum(num) + this.#cnvs.height / 2}
-  get y() {return this._y}
+  set offsetX(num) {
+    num = MathTools.validateNum(num)
+    this._offsetX = num
+    this._x = num
 
-  set scale(num) {this._scale = MathTools.validateNum(num)}
+    if(this.focusBody !== null) this._x += this.focusBody.x
+    this.drawFrame()
+  }
+  get offsetX() {return this._offsetX}
+
+  set offsetY(num) {
+    num = MathTools.validateNum(num)
+    this._offsetY = num
+    this._y = num
+
+    if(this.focusBody !== null) this._y += this.focusBody.y
+    this.drawFrame()
+  }
+  get offsetY() {return this._offsetY}
+
+  getScaledX(x) {
+    x = MathTools.validateNum(x)
+
+    x = (x - (this.#cnvs.width/2 - this._x)) * this.scale
+    x += this._x + (this.#cnvs.width/2 - this._x)
+
+    return x
+  }
+  getScaledY(y) {
+    y = MathTools.validateNum(y)
+
+    y = (y - (this.#cnvs.height/2 - this._y)) * this.scale
+    y += this._y + (this.#cnvs.height/2 - this._y)
+
+    return y
+  }
+  getScaledSize(size) {return size * this.scale}
+
+  set scale(num) {
+    this._scale = MathTools.validateNum(num)
+    this.drawFrame()
+    sessionStorage.gameScale = this._scale
+  }
   get scale() {return this._scale}
 
+  get focusBody() {return this._focusBody}
   set focusBody(body) {
     if(body.constructor !== Body) {console.error('Parameter must be class Body'); return}
     this._focusBody = body
+    this.drawFrame()
   }
-  removeFocus() {this._focusBody = null; this.x = 0; this.y = 0}
+  removeFocus() {this._focusBody = null; this.drawFrame()}
 
   drawDot(x, y, size, color) {
     [x, y, size] = MathTools.validateNum(x, y, size)
 
-    x *= this.scale
-    y *= this.scale
-
-    x += this.x 
-    y += this.y 
-
     this.#ctx.beginPath()
-    this.#ctx.arc(x, y, size * this.scale, 0, Math.PI * 2)
+    this.#ctx.arc(this.getScaledX(x), this.getScaledY(y), this.getScaledSize(size), 0, Math.PI * 2)
     this.#ctx.fillStyle = color
     this.#ctx.fill()
   }
@@ -294,31 +346,28 @@ class GravityGameRenderEngine extends GravityGame {
     [offsetX, offsetY, size] = MathTools.validateNum(offsetX, offsetY, size)
     if(cartesianVector.constructor !== CartesianVector) {console.error('Parameter must be class CartesianVector'); return}
 
-    let x = offsetX * this.scale,
-        y = offsetY * this.scale
-    
-    x += this.x
-    y += this.y
+    const x = this.getScaledX(offsetX), y = this.getScaledY(offsetY),
+          vecX = this.getScaledSize(cartesianVector.x),
+          vecY = this.getScaledSize(cartesianVector.y)
 
     this.#ctx.beginPath()
     this.#ctx.moveTo(x, y)
-    this.#ctx.lineTo(x + cartesianVector.x * this.scale, y + cartesianVector.y * this.scale)
+    this.#ctx.lineTo(x + vecX, y + vecY)
     
     this.#ctx.lineWidth = size
     this.#ctx.strokeStyle = color
     this.#ctx.stroke()
 
-    this.drawDot(offsetX + cartesianVector.x, offsetY + cartesianVector.y, size * 2, color)
+    this.drawDot(offsetX + cartesianVector.x, offsetY + cartesianVector.y, size / this.scale, color)
   }
 
   drawBody(b) {
-    this.drawDot(b.x, b.y, b.radius, 'white')
+    const drawRadius = this.scale * b.radius < this.mapViewBodyRadius ? this.mapViewBodyRadius / this.scale : b.radius
+    this.drawDot(b.x, b.y, drawRadius, 'white')
     
-    if(this.debug) {
-      this._points.push({x: b.x, y: b.y})
-      if(this._points.length > this._pointsLimit) this._points.shift()
+    if(this._debug && b._debug) {
 
-      if(this._debugVectors && b._debug) {
+      if(this._debug._debugVectors && b._debug._debugVectors) {
         let newVec = new CartesianVector().from(b.acceleration.toCartesianCoords().multiplyAbs(10))
 
         this.drawVector(b.x, b.y, newVec, undefined, 'orange')
@@ -329,6 +378,16 @@ class GravityGameRenderEngine extends GravityGame {
           }
         })
       }
+
+      b._debug._orbit.push({x: b.x, y: b.y})
+      if(b._debug._orbit.length > this._debug._pointsLimit) b._debug._orbit.shift()
+
+      this.#ctx.beginPath()
+      this.#ctx.moveTo(this.getScaledX(b._debug._orbit[0].x), this.getScaledY(b._debug._orbit[0].y))
+      b._debug._orbit.forEach(({x, y}) => this.#ctx.lineTo(this.getScaledX(x), this.getScaledY(y)))
+      this.#ctx.strokeStyle = 'rgba(255, 255, 255, .5)'
+      this.#ctx.lineWidth = 1
+      this.#ctx.stroke()
     }
   }
 
@@ -336,13 +395,11 @@ class GravityGameRenderEngine extends GravityGame {
     this.#ctx.clearRect(0, 0, this.#cnvs.width, this.#cnvs.height)
 
     if(this._focusBody !== null) {
-      this.x = -this._focusBody.x * this.scale
-      this.y = -this._focusBody.y * this.scale
+      this._x = -this._focusBody.x + this.#cnvs.width/2 + this.offsetX
+      this._y = -this._focusBody.y + this.#cnvs.height/2 + this.offsetY
     }
 
     this.bodies.forEach(b => this.drawBody(b))
-
-    if(this.debug) this._points.forEach(({x, y}) => this.drawDot(x, y, 50, 'white'))
   }
 
   play() {
@@ -357,4 +414,69 @@ class GravityGameRenderEngine extends GravityGame {
   }
 
   stop() {clearInterval(this.#gameLoop); this.#gameLoop = null; this.#iterations = 0}
+
+  setHotkeys() {
+    let moveCameraX = 0,
+        moveCameraY = 0,
+        thisX = 0,
+        thisY = 0,
+        focusBodyIndex = -1
+
+    function setCoords(e) {
+      this.offsetX = (e.offsetX - moveCameraX) / this.scale + thisX
+      this.offsetY = (e.offsetY - moveCameraY) / this.scale + thisY
+      this.drawFrame()
+    }
+    setCoords = setCoords.bind(this)
+
+    this.#cnvs.addEventListener('mousedown', e => {
+      if(e.button === 1) {
+        moveCameraX = e.offsetX
+        moveCameraY = e.offsetY
+        thisX = this.offsetX
+        thisY = this.offsetY
+
+        this.#cnvs.addEventListener('mousemove', setCoords)
+      }
+    })
+
+    this.#cnvs.addEventListener('mouseup', e => {
+      if(e.button === 1) this.#cnvs.removeEventListener('mousemove', setCoords)
+    })
+
+    this.#cnvs.addEventListener('wheel', e => {
+      if(e.deltaY < 0) this.scale *= 2
+      else if(e.deltaY > 0) this.scale /= 2
+      this.drawFrame()
+    })
+
+    document.body.addEventListener('keydown', e => {
+      switch(e.key) {
+        case ',': {
+          if(this.bodies.length !== 0) {
+            if(this.bodies[--focusBodyIndex] === undefined) focusBodyIndex = this.bodies.length - 1
+            this.focusBody = this.bodies[focusBodyIndex]
+            this.offsetX = 0
+            this.offsetY = 0
+          }
+          break
+        }
+        case '.': {
+          if(this.bodies.length !== 0) {
+            if(this.bodies[++focusBodyIndex] === undefined) focusBodyIndex = 0
+            this.focusBody = this.bodies[focusBodyIndex]
+            this.offsetX = 0
+            this.offsetY = 0
+          }
+          break
+        }
+        case '`': {
+          this.removeFocus()
+          break
+        }
+      }
+
+      // console.log(e)
+    })
+  }
 }
